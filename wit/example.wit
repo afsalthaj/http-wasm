@@ -1,0 +1,13 @@
+package golem:demo;
+
+// See https://component-model.bytecodealliance.org/design/wit.html for more details about the WIT syntax
+
+interface api {
+  add: func(value: u64);
+  get: func() -> u64;
+  remote: func(input: string) -> result<string, string>;
+}
+
+world example {
+  export api;
+}
