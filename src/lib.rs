@@ -29,13 +29,19 @@ impl Guest for Component {
         STATE.with_borrow_mut(|state| state.total += value);
     }
 
-    /// Returns the current total.
-    fn get() -> u64 {
-        STATE.with_borrow(|state| state.total)
+    fn get(actions: Actions, user_id: u64) -> CustomResult {
+        match actions {
+            Actions::Follow(user_id) => CustomResult::Success(format!("follow {}", user_id)),
+            Actions::PostTweet(user_id) => CustomResult::Success(format!("tweet {}", user_id)),
+            Actions::Register(user_id) => CustomResult::Success(format!("register {}", user_id)),
+            Actions::Unfollow(user_id) => CustomResult::Failure("unfollow".to_string()),
+        }
     }
 
+    /// Returns the current total.
+
     fn remote(input: String) -> Result<String, String> {
-        worker_to_worker()
+        worker_to_worker(input)
     }
 }
 

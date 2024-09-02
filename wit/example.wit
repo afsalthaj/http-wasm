@@ -3,8 +3,21 @@ package golem:demo;
 // See https://component-model.bytecodealliance.org/design/wit.html for more details about the WIT syntax
 
 interface api {
+
+  variant actions {
+    register(string),
+    follow(u64),
+    unfollow(u64),
+    post-tweet(string)
+  }
+
+  variant custom-result {
+    success(string),
+    failure(string)
+  }
+
   add: func(value: u64);
-  get: func() -> u64;
+  get: func(actions: actions, user-id: u64) -> custom-result;
   remote: func(input: string) -> result<string, string>;
 }
 

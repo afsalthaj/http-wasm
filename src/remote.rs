@@ -2,7 +2,7 @@ use reqwest::*;
 use reqwest::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use serde_json::json;
 
-pub fn worker_to_worker() -> core::result::Result<String, String> {
+pub fn worker_to_worker(input: String) -> core::result::Result<String, String> {
     let url = "https://x.api.golem.cloud/api/v3/user";
 
     let client =
@@ -10,14 +10,16 @@ pub fn worker_to_worker() -> core::result::Result<String, String> {
 
     // JSON body
     let json_body = json!({
-        "id": "afsalthaj",
+        "id": input,
         "name": "AfsalThaj",
         "email": "adam@golem.cloud"
     });
 
+
     let response = client
         .post(url)
         .header(ACCEPT, "application/json")
+        .header("content-type", "plain/text")
         .json(&json_body)
         .send();
 
@@ -34,7 +36,7 @@ pub fn worker_to_worker() -> core::result::Result<String, String> {
                     }
                 }
             } else {
-                Err(format!("Request failed with status: {}", response.status()))
+                Err(format!("Request failed with status: {}", response.text().unwrap_or("well didnt work".to_string())))
             }
         }
         Err(e) => {

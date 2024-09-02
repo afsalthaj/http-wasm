@@ -1,0 +1,21 @@
+{
+  "id": "variant-example",
+  "draft": true,
+  "version": "0.0.2",
+  "routes": [
+    {
+      "method": "Get",
+      "path": "/v2/tweets/{user}",
+      "binding": {
+        "type": "wit-worker",
+        "componentId": {
+          "componentId": "94a3fe3d-3b54-488d-8dad-f7190186ccd1",
+          "version": 0
+        },
+        "workerName": "test4",
+        "response": "${let user = request.path.user; let action = register(user); let result = golem:demo/api.{get}(action, user); let body_content = match result {  success(v) => v, failure(v) => v } ; {status: 200u64, body: body_content}}"
+      }
+    }
+  ]
+}
+
