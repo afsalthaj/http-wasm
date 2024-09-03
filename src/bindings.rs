@@ -20,6 +20,7 @@ pub mod exports {
                     Follow(_rt::String),
                     Unfollow(_rt::String),
                     PostTweet(_rt::String),
+                    Noop,
                 }
                 impl ::core::fmt::Debug for Actions {
                     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -36,6 +37,7 @@ pub mod exports {
                             Actions::PostTweet(e) => {
                                 f.debug_tuple("Actions::PostTweet").field(e).finish()
                             }
+                            Actions::Noop => f.debug_tuple("Actions::Noop").finish(),
                         }
                     }
                 }
@@ -43,6 +45,7 @@ pub mod exports {
                 pub enum CustomResult {
                     Success(_rt::String),
                     Failure(_rt::String),
+                    Unknown,
                 }
                 impl ::core::fmt::Debug for CustomResult {
                     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -53,19 +56,15 @@ pub mod exports {
                             CustomResult::Failure(e) => {
                                 f.debug_tuple("CustomResult::Failure").field(e).finish()
                             }
+                            CustomResult::Unknown => {
+                                f.debug_tuple("CustomResult::Unknown").finish()
+                            }
                         }
                     }
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_add_cabi<T: Guest>(arg0: i64) {
-                    #[cfg(target_arch = "wasm32")]
-                    _rt::run_ctors_once();
-                    T::add(arg0 as u64);
-                }
-                #[doc(hidden)]
-                #[allow(non_snake_case)]
-                pub unsafe fn _export_get_cabi<T: Guest>(
+                pub unsafe fn _export_process_cabi<T: Guest>(
                     arg0: i32,
                     arg1: *mut u8,
                     arg2: usize,
@@ -102,8 +101,7 @@ pub mod exports {
                             };
                             Actions::Unfollow(e4)
                         }
-                        n => {
-                            debug_assert_eq!(n, 3, "invalid enum discriminant");
+                        3 => {
                             let e4 = {
                                 let len3 = arg2;
                                 let bytes3 = _rt::Vec::from_raw_parts(arg1.cast(), len3, len3);
@@ -112,10 +110,14 @@ pub mod exports {
                             };
                             Actions::PostTweet(e4)
                         }
+                        n => {
+                            debug_assert_eq!(n, 4, "invalid enum discriminant");
+                            Actions::Noop
+                        }
                     };
                     let len5 = arg4;
                     let bytes5 = _rt::Vec::from_raw_parts(arg3.cast(), len5, len5);
-                    let result6 = T::get(v4, _rt::string_lift(bytes5));
+                    let result6 = T::process(v4, _rt::string_lift(bytes5));
                     let ptr7 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
                     match result6 {
                         CustomResult::Success(e) => {
@@ -136,12 +138,15 @@ pub mod exports {
                             *ptr7.add(8).cast::<usize>() = len9;
                             *ptr7.add(4).cast::<*mut u8>() = ptr9.cast_mut();
                         }
+                        CustomResult::Unknown => {
+                            *ptr7.add(0).cast::<u8>() = (2i32) as u8;
+                        }
                     }
                     ptr7
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn __post_return_get<T: Guest>(arg0: *mut u8) {
+                pub unsafe fn __post_return_process<T: Guest>(arg0: *mut u8) {
                     let l0 = i32::from(*arg0.add(0).cast::<u8>());
                     match l0 {
                         0 => {
@@ -149,11 +154,12 @@ pub mod exports {
                             let l2 = *arg0.add(8).cast::<usize>();
                             _rt::cabi_dealloc(l1, l2, 1);
                         }
-                        _ => {
+                        1 => {
                             let l3 = *arg0.add(4).cast::<*mut u8>();
                             let l4 = *arg0.add(8).cast::<usize>();
                             _rt::cabi_dealloc(l3, l4, 1);
                         }
+                        _ => (),
                     }
                 }
                 #[doc(hidden)]
@@ -205,37 +211,32 @@ pub mod exports {
                     }
                 }
                 pub trait Guest {
-                    fn add(value: u64);
-                    fn get(actions: Actions, user_id: _rt::String) -> CustomResult;
+                    fn process(actions: Actions, user_id: _rt::String) -> CustomResult;
                     fn remote(input: _rt::String) -> Result<_rt::String, _rt::String>;
                 }
                 #[doc(hidden)]
 
                 macro_rules! __export_golem_demo_api_cabi{
-    ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+      ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-      #[export_name = "golem:demo/api#add"]
-      unsafe extern "C" fn export_add(arg0: i64,) {
-        $($path_to_types)*::_export_add_cabi::<$ty>(arg0)
-      }
-      #[export_name = "golem:demo/api#get"]
-      unsafe extern "C" fn export_get(arg0: i32,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
-        $($path_to_types)*::_export_get_cabi::<$ty>(arg0, arg1, arg2, arg3, arg4)
-      }
-      #[export_name = "cabi_post_golem:demo/api#get"]
-      unsafe extern "C" fn _post_return_get(arg0: *mut u8,) {
-        $($path_to_types)*::__post_return_get::<$ty>(arg0)
-      }
-      #[export_name = "golem:demo/api#remote"]
-      unsafe extern "C" fn export_remote(arg0: *mut u8,arg1: usize,) -> *mut u8 {
-        $($path_to_types)*::_export_remote_cabi::<$ty>(arg0, arg1)
-      }
-      #[export_name = "cabi_post_golem:demo/api#remote"]
-      unsafe extern "C" fn _post_return_remote(arg0: *mut u8,) {
-        $($path_to_types)*::__post_return_remote::<$ty>(arg0)
-      }
-    };);
-  }
+        #[export_name = "golem:demo/api#process"]
+        unsafe extern "C" fn export_process(arg0: i32,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+          $($path_to_types)*::_export_process_cabi::<$ty>(arg0, arg1, arg2, arg3, arg4)
+        }
+        #[export_name = "cabi_post_golem:demo/api#process"]
+        unsafe extern "C" fn _post_return_process(arg0: *mut u8,) {
+          $($path_to_types)*::__post_return_process::<$ty>(arg0)
+        }
+        #[export_name = "golem:demo/api#remote"]
+        unsafe extern "C" fn export_remote(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+          $($path_to_types)*::_export_remote_cabi::<$ty>(arg0, arg1)
+        }
+        #[export_name = "cabi_post_golem:demo/api#remote"]
+        unsafe extern "C" fn _post_return_remote(arg0: *mut u8,) {
+          $($path_to_types)*::__post_return_remote::<$ty>(arg0)
+        }
+      };);
+    }
                 #[doc(hidden)]
                 pub(crate) use __export_golem_demo_api_cabi;
                 #[repr(align(4))]
@@ -302,16 +303,15 @@ pub(crate) use __export_example_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:example:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 365] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xef\x01\x01A\x02\x01\
-A\x02\x01B\x0b\x01q\x04\x08register\x01s\0\x06follow\x01s\0\x08unfollow\x01s\0\x0a\
-post-tweet\x01s\0\x04\0\x07actions\x03\0\0\x01q\x02\x07success\x01s\0\x07failure\
-\x01s\0\x04\0\x0dcustom-result\x03\0\x02\x01@\x01\x05valuew\x01\0\x04\0\x03add\x01\
-\x04\x01@\x02\x07actions\x01\x07user-ids\0\x03\x04\0\x03get\x01\x05\x01j\x01s\x01\
-s\x01@\x01\x05inputs\0\x06\x04\0\x06remote\x01\x07\x04\x01\x0egolem:demo/api\x05\
-\0\x04\x01\x12golem:demo/example\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\0G\x09pr\
-oducers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x06\
-0.25.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 366] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf0\x01\x01A\x02\x01\
+A\x02\x01B\x09\x01q\x05\x08register\x01s\0\x06follow\x01s\0\x08unfollow\x01s\0\x0a\
+post-tweet\x01s\0\x04noop\0\0\x04\0\x07actions\x03\0\0\x01q\x03\x07success\x01s\0\
+\x07failure\x01s\0\x07unknown\0\0\x04\0\x0dcustom-result\x03\0\x02\x01@\x02\x07a\
+ctions\x01\x07user-ids\0\x03\x04\0\x07process\x01\x04\x01j\x01s\x01s\x01@\x01\x05\
+inputs\0\x05\x04\0\x06remote\x01\x06\x04\x01\x0egolem:demo/api\x05\0\x04\x01\x12\
+golem:demo/example\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -8,16 +8,17 @@ interface api {
     register(string),
     follow(string),
     unfollow(string),
-    post-tweet(string)
+    post-tweet(string),
+    noop
   }
 
   variant custom-result {
     success(string),
-    failure(string)
+    failure(string),
+    unknown
   }
 
-  add: func(value: u64);
-  get: func(actions: actions, user-id: string) -> custom-result;
+  process: func(actions: actions, user-id: string) -> custom-result;
   remote: func(input: string) -> result<string, string>;
 }
 
