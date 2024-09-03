@@ -6,8 +6,8 @@ interface api {
 
   variant actions {
     register(string),
-    follow(u64),
-    unfollow(u64),
+    follow(string),
+    unfollow(string),
     post-tweet(string)
   }
 
@@ -17,7 +17,7 @@ interface api {
   }
 
   add: func(value: u64);
-  get: func(actions: actions, user-id: u64) -> custom-result;
+  get: func(actions: actions, user-id: string) -> custom-result;
   remote: func(input: string) -> result<string, string>;
 }
 

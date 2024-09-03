@@ -29,7 +29,7 @@ impl Guest for Component {
         STATE.with_borrow_mut(|state| state.total += value);
     }
 
-    fn get(actions: Actions, user_id: u64) -> CustomResult {
+    fn get(actions: Actions, user_id: String) -> CustomResult {
         match actions {
             Actions::Follow(user_id) => CustomResult::Success(format!("follow {}", user_id)),
             Actions::PostTweet(user_id) => CustomResult::Success(format!("tweet {}", user_id)),
